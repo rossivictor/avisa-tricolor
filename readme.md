@@ -5,4 +5,6 @@
 ## Roadmap
 * URL dinâmica entregando sempre próximo jogo ou lista de jogos
 * Implementação de menu seletor com todos os setores disponíveis
-* Deploy servidor stage / controlado 
+* Deploy servidor stage / controlado
+* botar lista de telefones avisados
+* * link wa-me com telefones a avisar ou api whatsapp disparando

@@ -8,25 +8,33 @@ def bot():
     encontrado = False
 
     def lista_jogos():
-        destino_bot = "https://www.spfcticket.net/proximos-jogos/"
+        destino_bot = "https://www.spfcticket.net/"
         response = requests.get(destino_bot)
         html_parseado = BeautifulSoup(response.text, 'html.parser')
-        todos_jogos = html_parseado.find_all(class_='card-jogo')
-        
+        todos_jogos = html_parseado.select('.card-jogo')
+
+        jogos_disponiveis = []
+
         if todos_jogos:
-            print("Jogos disponíveis: ")
-            
-            index = 0
-            for jogo in todos_jogos:
-                nome = html_parseado.select('.card-jogo a img')[index].get('title')
-                print(f"[{index}] - {nome}")
-                index += index
+            print("\n* Bilheteria aberta *\n")
+            for index, jogo in enumerate(todos_jogos):
+                botao_comprar = jogo.select_one('a.btn.btn-primary') 
 
-            escolha = int(input("Escolha o jogo: "))
+                if botao_comprar and 'Comprar agora' in botao_comprar.text:
+                    nome = jogo.select_one('.jogo-title').text.strip()
+                    link = botao_comprar.get('href')
+                    print(f"  [{index}] - {nome}")
+                    jogos_disponiveis.append(link)            
 
-            return html_parseado.select('.card-jogo a')[escolha].get('href')
 
-        return print("Nenhum jogo disponível, tente novamente mais tarde.", "Enquanto isso, assista o antológico Gol 100 do Rogério Ceni: https://www.youtube.com/watch?v=q0bzabZyWNk")
+            if jogos_disponiveis:
+                escolha = int(input("\n Escolha o jogo: "))
+                return jogos_disponiveis[escolha]
+        
+        else:
+            print("Nenhum jogo disponível, tente novamente mais tarde.")
+            print("Enquanto isso, assista o antológico Gol 100 do Rogério Ceni: https://www.youtube.com/watch?v=q0bzabZyWNk")
+            return None
 
     def disparo_alerta():
         print("Ingresso disponível agora:", time.strftime("%Y-%m-%d %H:%M:%S"))
@@ -39,16 +47,14 @@ def bot():
             else:
                 print("Erro:", response.status_code)
                 return None
-        
-        # flag = input("Que ingresso você quer? \n")
+
         conteudo_pagina = request(destino_bot)
         
         if conteudo_pagina:
             html_parseado = BeautifulSoup(conteudo_pagina, 'html.parser')
-            todos_jogos = html_parseado.find_all(class_='card-jogo')
-            print(todos_jogos)
-            for jogo in todos_jogos:
-                print(jogo.get('href'))
+            link_pagina_compra = html_parseado.select('li a.btn.btn-primary')[0].get('href')
+            print(link_pagina_compra)
+        
             return {"disponivel": True}
         
         else:
@@ -67,7 +73,8 @@ def bot():
             time.sleep(random.choice(intervalo))
     
     jogo_escolhido = lista_jogos()
-    pesquisa_ingresso(jogo_escolhido)
+    if jogo_escolhido:  # Verifica se um jogo foi escolhido
+        pesquisa_ingresso(jogo_escolhido)
 
 # debug()
 bot()

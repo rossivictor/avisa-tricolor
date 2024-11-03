@@ -3,7 +3,6 @@ import random
 import time
 import requests
 from selenium import webdriver
-from selenium.webdriver.chrome.service import Service
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
@@ -26,7 +25,6 @@ def bandeira():
     barra(PRETO, barra_largura, barra_altura)
     
     return
-
 
 def bot():
     intervalo = [30, 45, 18, 20]
@@ -77,7 +75,7 @@ def bot():
             "  [2] - Arquibancada Laranja - Organizadas",
         ]
         
-        print("\n  🏟  Setores disponíveis: \n")
+        print("\n  🏟  Setores do MorumBIS: \n")
 
         for setor in setores_disponiveis:
             print(setor)
@@ -101,24 +99,23 @@ def bot():
             pagina_renderizada = BeautifulSoup(navegador.page_source, "html.parser")
             navegador.quit()
             return pagina_renderizada
-        
-        html_parseado = renderiza_pagina(link)
-        
-        dicionario_setores = [
-            "Leste",
-            "Arquibancada Vermelha - Norte",
-            "Arquibancada Laranja - Organizadas",
-            "CAMAROTE"
-        ]
-        
-        setores_pagina = html_parseado.find_all('label', class_='nameAndLot')
-        
+         
         # Finalizar verificação de ingresso disponível
             # Listar os setores do Morumbis no dicionário
             # Transformar o dicionário dos setores em uma lista enumerada que corresponda às opções iniciais apresentadas ao usuário
             # Escolher o setor baseado no setor_escolhido
             # Verificar se o setor escolhido está disponível na página
 
+        dicionario_setores = [
+            "Leste",
+            "Arquibancada Vermelha - Norte",
+            "Arquibancada Laranja - Organizadas",
+            "CAMAROTE"
+        ]
+
+        html_parseado = renderiza_pagina(link)
+        
+        setores_pagina = html_parseado.find_all('label', class_='nameAndLot')
 
         for setor in dicionario_setores:
             for setor_disponivel in setores_pagina:
@@ -168,6 +165,6 @@ def bot():
     
     if jogo_escolhido:
         setor_escolhido = escolha_setor()
-        pesquisa_ingresso(jogo_escolhido, setor_escolhido)
+        return pesquisa_ingresso(jogo_escolhido, setor_escolhido)
 
 bot()

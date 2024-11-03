@@ -2,24 +2,28 @@ from bs4 import BeautifulSoup
 import random
 import time
 import requests
+from selenium import webdriver
+from selenium.webdriver.chrome.service import Service
+from selenium.webdriver.common.by import By
+from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.support import expected_conditions as EC
 
 def bandeira():
-    # ANSI escape codes for colors
-    RED = "\033[41m"      # Red background
-    WHITE = "\033[47m"    # White background
-    BLACK = "\033[40m"    # Black background
-    RESET = "\033[0m"     # Reset color
+    VERMELHO = "\033[41m"      
+    BRANCO = "\033[47m"
+    PRETO = "\033[40m"
+    RESET = "\033[0m"
 
-    bar_height = 1
-    bar_width = 10
+    barra_altura = 1
+    barra_largura = 10
 
-    def print_bar(color, width, height):
+    def barra(color, width, height):
         for _ in range(height):
             print(color + " " * width + RESET)
 
-    print_bar(RED, bar_width, bar_height)
-    print_bar(WHITE, bar_width, bar_height)
-    print_bar(BLACK, bar_width, bar_height)
+    barra(VERMELHO, barra_largura, barra_altura)
+    barra(BRANCO, barra_largura, barra_altura)
+    barra(PRETO, barra_largura, barra_altura)
     
     return
 
@@ -56,7 +60,6 @@ def bot():
                     print(f"  [{index}] - {nome}")
                     jogos_disponiveis.append(link)            
 
-
             if jogos_disponiveis:
                 escolha = int(input("\n * Digite a opção e escolha o jogo 👉 "))
                 return jogos_disponiveis[escolha]
@@ -82,23 +85,45 @@ def bot():
         setor_escolhido = int(input("\n * Agora escolha o setor 👉 "))
         return setor_escolhido 
 
-    def verifica_ingresso(setor_escolhido, response):
-        # Verifica se o setor escolhido está disponível no html parseado
-        # Target do seletor: '.nameAndLot'
+    def verifica_ingresso(setor_escolhido, link):
+
+        def renderiza_pagina(link):
+            params = webdriver.ChromeOptions()
+            params.add_argument('--headless') 
+            navegador = webdriver.Chrome(options=params)
+            navegador.get(link)            
+            
+            try:
+                WebDriverWait(navegador, 10).until(EC.presence_of_element_located((By.CLASS_NAME, "nameAndLot")))
+            except:
+                print("\n ⚙️ Nenhum ingresso disponível, tentando novamente... \n")
+
+            pagina_renderizada = BeautifulSoup(navegador.page_source, "html.parser")
+            navegador.quit()
+            return pagina_renderizada
+        
+        html_parseado = renderiza_pagina(link)
+        
         dicionario_setores = [
             "Leste",
             "Arquibancada Vermelha - Norte",
             "Arquibancada Laranja - Organizadas",
+            "CAMAROTE"
         ]
         
-        html_parseado = BeautifulSoup(response, 'html.parser')
-        
-        # TODO: Dar um jeito de pegar esse elemento abaixo 😡
         setores_pagina = html_parseado.find_all('label', class_='nameAndLot')
         
+        # Finalizar verificação de ingresso disponível
+            # Listar os setores do Morumbis no dicionário
+            # Transformar o dicionário dos setores em uma lista enumerada que corresponda às opções iniciais apresentadas ao usuário
+            # Escolher o setor baseado no setor_escolhido
+            # Verificar se o setor escolhido está disponível na página
+
+
         for setor in dicionario_setores:
-            if setor in setores_pagina:
-                return True
+            for setor_disponivel in setores_pagina:
+                if setor in setor_disponivel.text:
+                    return True
 
         return False
 
@@ -110,10 +135,9 @@ def bot():
     def query(destino_bot, setor_escolhido):
         response = request(destino_bot)
         if response:
-            html_parseado = BeautifulSoup(response, 'html.parser')
-            link_pagina_compra = html_parseado.select('li a.btn.btn-primary')[0].get('href')
-
-            status = verifica_ingresso(setor_escolhido, response)
+            html_parseado_jogos = BeautifulSoup(response, 'html.parser')
+            link_pagina_compra = html_parseado_jogos.select('li a.btn.btn-primary')[0].get('href')
+            status = verifica_ingresso(setor_escolhido, link_pagina_compra)
             return {
                 "disponivel": status,
                 "link": link_pagina_compra
@@ -121,30 +145,29 @@ def bot():
         
         else:
             return {"disponivel": False}
-        
+
     def pesquisa_ingresso(jogo_escolhido, setor_escolhido):
         tentativa = 0
         nonlocal encontrado
         if tentativa == 0: 
-            print('\n ✅ Pronto! Deixe a janela aberta deixe as máquinas trabalharem 🖐🏽 \n')
+            print('\n ✅ Pronto! Deixe a janela aberta, aguarde e deixe as máquinas trabalharem 🖐🏽 \n')
         while not encontrado:
             if tentativa >= 1:
-                print(f"⚙️ Tentativa #{tentativa}:", time.strftime("%Y-%m-%d %H:%M:%S"))
+                print(f"⚙️ Tentativa #{tentativa}:", time.strftime("%H:%M:%S"))
             
             resultado_query = query(jogo_escolhido, setor_escolhido)
             
             if resultado_query["disponivel"]:
                 encontrado = True
-                disparo_alerta(resultado_query["link"])
+                return disparo_alerta(resultado_query["link"])
             
             tentativa += 1
             time.sleep(random.choice(intervalo)) # respira um pouco.
     
     jogo_escolhido = lista_jogos()
     
-    if jogo_escolhido:  # Verifica se um jogo foi escolhido
+    if jogo_escolhido:
         setor_escolhido = escolha_setor()
         pesquisa_ingresso(jogo_escolhido, setor_escolhido)
 
-# debug()
 bot()

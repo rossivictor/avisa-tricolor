@@ -14,11 +14,9 @@ Esse bot executa dentro de um ambiente Python (3.x.x >). Caso não tenha o ambie
 
 E necessario que você tenha instalado o *Google Chrome*. O bot utiliza o motor do Chrome para verificar informações necessárias. Provavelmente funciona com outros navegadores, mas precisa adaptar o driver para cada implementação, usando o Chrome por ser o navegador mais popular e pelo Chromium em modo teste funcionar bem. Fique à vontade para alterar no codigo de acordo com a sua necessidade. Pull requests são bem vindos.
 
-Já com o ambiente configurado:
+Já com o ambiente configurado, instale via pip as dependências rodando o seguinte comando:
 
-* Instale via pip as dependências rodando o seguinte comando:
-
-### Usando `python3`
+#### Usando `python3`
 `pip3 install beautifulsoup4 requests selenium`
 
 ### Rodando o projeto

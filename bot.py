@@ -30,6 +30,44 @@ def bot():
     intervalo = [30, 45, 18, 20]
     encontrado = False
 
+    opcoes_setores = [
+        "  [0] - Arquibancada Norte Oreo - Inteira",
+        "  [1] - Arquibancada Leste Lacta - Meia",
+        "  [2] - Arquibancada Leste Lacta - Inteira",
+        "  [3] - Arquibancada Sul Diamante Negro - Meia",
+        "  [4] - Arquibancada Sul Diamante Negro - Inteira",
+        "  [5] - Arquibancada Visitante Ouro Branco - Meia",
+        "  [6] - Arquibancada Visitante Ouro Branco - Inteira",
+        "  [7] - Cadeira Superior Norte Oreo - Inteira",
+        "  [8] - Cadeira Superior Sul Diamante Negro - Meia",
+        "  [9] - Cadeira Superior Sul Diamante Negro - Inteira",
+        "  [10] - Cadeira Especial Oeste Ouro Branco - Especial Meia",
+        "  [11] - Cadeira Especial Oeste Ouro Branco - Especial Inteira",
+        "  [12] - Cadeira Térrea Oeste Ouro Branco - Meia",
+        "  [13] - Cadeira Térrea Oeste Ouro Branco - Inteira",
+        "  [14] - Camarote Corporativo SPFC - Único",
+        "  [15] - Camarote dos Ídolos - Único"
+    ]
+
+    dicionario_setores = [
+        "ARQUIBANCADA NORTE OREO - Inteira",
+        "ARQUIBANCADA LESTE LACTA - Meia",
+        "ARQUIBANCADA LESTE LACTA - Inteira",
+        "ARQUIBANCADA SUL DIAMANTE NEGRO - Meia",
+        "ARQUIBANCADA SUL DIAMANTE NEGRO - Inteira",
+        "ARQUIBANCADA VISITANTE OURO BRANCO - Meia",
+        "ARQUIBANCADA VISITANTE OURO BRANCO - Inteira",
+        "CADEIRA SUPERIOR NORTE OREO - Inteira",
+        "CAD. SUP. SUL DIAMANTE NEGRO - Meia",
+        "CAD. SUP. SUL DIAMANTE NEGRO - Inteira",
+        "CAD. ESP. OESTE OURO BRANCO - Especial Meia",
+        "CAD. ESP. OESTE OURO BRANCO - Especial Inteira",
+        "CAD. TÉRREA OESTE OURO BRANCO - Meia",
+        "CAD. TÉRREA OESTE OURO BRANCO - Inteira",
+        "CAMAROTE CORPORATIVO SPFC - Único",
+        "CAMAROTE DOS ÍDOLOS - Único"
+   ] 
+
     def request(destino_bot):    
         response = requests.get(destino_bot)
         if response.status_code == 200:
@@ -69,22 +107,17 @@ def bot():
             return None
 
     def escolha_setor():
-        setores_disponiveis = [
-            "  [0] - Arquibancada Azul - Leste",
-            "  [1] - Arquibancada Vermelha - Norte",
-            "  [2] - Arquibancada Laranja - Organizadas",
-        ]
-        
+        setores_disponiveis = dicionario_setores 
+
         print("\n  🏟  Setores do MorumBIS: \n")
 
-        for setor in setores_disponiveis:
+        for setor in opcoes_setores:
             print(setor)
 
         setor_escolhido = int(input("\n * Agora escolha o setor 👉 "))
         return setor_escolhido 
 
     def verifica_ingresso(setor_escolhido, link):
-
         def renderiza_pagina(link):
             params = webdriver.ChromeOptions()
             params.add_argument('--headless') 
@@ -99,28 +132,14 @@ def bot():
             pagina_renderizada = BeautifulSoup(navegador.page_source, "html.parser")
             navegador.quit()
             return pagina_renderizada
-         
-        # Finalizar verificação de ingresso disponível
-            # Listar os setores do Morumbis no dicionário
-            # Transformar o dicionário dos setores em uma lista enumerada que corresponda às opções iniciais apresentadas ao usuário
-            # Escolher o setor baseado no setor_escolhido
-            # Verificar se o setor escolhido está disponível na página
-
-        dicionario_setores = [
-            "Leste",
-            "Arquibancada Vermelha - Norte",
-            "Arquibancada Laranja - Organizadas",
-            "CAMAROTE"
-        ]
-
+        
         html_parseado = renderiza_pagina(link)
         
-        setores_pagina = html_parseado.find_all('label', class_='nameAndLot')
+        setores_disponiveis = html_parseado.find_all('div', class_='cart-product-group-item')
 
-        for setor in dicionario_setores:
-            for setor_disponivel in setores_pagina:
-                if setor in setor_disponivel.text:
-                    return True
+        for setor in setores_disponiveis:
+            if dicionario_setores[setor_escolhido] in setor.text and 'Esgotado' not in setor.text:
+                return True
 
         return False
 

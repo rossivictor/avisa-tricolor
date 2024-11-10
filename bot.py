@@ -85,30 +85,32 @@ def bot():
         jogos_disponiveis = []
 
         if todos_jogos:
-            bandeira()
-            print("\nBilheteria aberta \n")
+            
             for index, jogo in enumerate(todos_jogos):
                 botao_comprar = jogo.select_one('a.btn.btn-primary') 
 
                 if botao_comprar and 'Comprar agora' in botao_comprar.text:
                     nome = jogo.select_one('.jogo-title').text.strip()
                     link = botao_comprar.get('href')
+                    bandeira()
+                    print("\nBilheteria aberta \n")
                     print(f"  [{index}] - {nome}")
-                    jogos_disponiveis.append(link)            
+                    jogos_disponiveis.append(link)
+                
+                else:    
+                    bandeira()
+                    print("\n❌ Nenhum jogo disponível, volte mais tarde e tente novamente.")
+                    print("\n⚽️ Enquanto isso, assista o antológico Gol 100 do Rogério Ceni: \n➡️ https://www.youtube.com/watch?v=q0bzabZyWNk")
+                    return None
 
             if jogos_disponiveis:
                 escolha = int(input("\n * Digite a opção e escolha o jogo 👉 "))
                 return jogos_disponiveis[escolha]
-        
         else:
-            bandeira()
-            print("\n❌ Nenhum jogo disponível, volte mais tarde e tente novamente.")
-            print("\n⚽️ Enquanto isso, assista o antológico Gol 100 do Rogério Ceni: \n➡️ https://www.youtube.com/watch?v=q0bzabZyWNk")
-            return None
+            return None        
+        
 
     def escolha_setor():
-        setores_disponiveis = dicionario_setores 
-
         print("\n  🏟  Setores do MorumBIS: \n")
 
         for setor in opcoes_setores:

@@ -96,16 +96,18 @@ def bot():
                     print("\nBilheteria aberta \n")
                     print(f"  [{index}] - {nome}")
                     jogos_disponiveis.append(link)
-                
+                     
+                    if jogos_disponiveis:
+                        escolha = int(input("\n * Digite a opção e escolha o jogo 👉 "))
+                        return jogos_disponiveis[escolha]
+
                 else:    
                     bandeira()
                     print("\n❌ Nenhum jogo disponível, volte mais tarde e tente novamente.")
                     print("\n⚽️ Enquanto isso, assista o antológico Gol 100 do Rogério Ceni: \n➡️ https://www.youtube.com/watch?v=q0bzabZyWNk")
                     return None
 
-            if jogos_disponiveis:
-                escolha = int(input("\n * Digite a opção e escolha o jogo 👉 "))
-                return jogos_disponiveis[escolha]
+            
         else:
             return None        
         
@@ -151,14 +153,21 @@ def bot():
         return print("\n🎉 Bom jogo, Tricolor! Vamos São Paulo! 🇳🇱")
 
     def query(destino_bot, setor_escolhido):
-        response = request(destino_bot)
-        if response:
+        def parseador_link(link):
+            response = request(link)
             html_parseado_jogos = BeautifulSoup(response, 'html.parser')
             link_pagina_compra = html_parseado_jogos.select('li a.btn.btn-primary')[0].get('href')
-            status = verifica_ingresso(setor_escolhido, link_pagina_compra)
+            return link_pagina_compra
+        
+        link_parseado = parseador_link(destino_bot)
+
+        if link_parseado:
+            if 'cart' not in link_parseado:
+               link_parseado = parseador_link(link_parseado)
+            status = verifica_ingresso(setor_escolhido, link_parseado)
             return {
                 "disponivel": status,
-                "link": link_pagina_compra
+                "link": link_parseado 
             }
         
         else:
@@ -189,3 +198,5 @@ def bot():
         return pesquisa_ingresso(jogo_escolhido, setor_escolhido)
 
 bot()
+
+# !TO-DO: Rodar a página escolhida para fazer o scrap e pegar o link do botão de compra certo

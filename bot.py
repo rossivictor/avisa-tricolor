@@ -7,196 +7,113 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 
-def bandeira():
-    VERMELHO = "\033[41m"      
-    BRANCO = "\033[47m"
-    PRETO = "\033[40m"
-    RESET = "\033[0m"
+def lista_jogos():
+    destino_bot = "https://www.spfcticket.net/"
+    response = requests.get(destino_bot)
+    html_parseado = BeautifulSoup(response.text, 'html.parser')
+    todos_jogos = html_parseado.select('.card-jogo')
 
-    barra_altura = 1
-    barra_largura = 10
+    jogos_disponiveis = []
 
-    def barra(color, width, height):
-        for _ in range(height):
-            print(color + " " * width + RESET)
+    if todos_jogos:
+        for index, jogo in enumerate(todos_jogos):
+            botao_comprar = jogo.select_one('a.btn.btn-primary')
+            if botao_comprar and 'Comprar agora' in botao_comprar.text:
+                nome = jogo.select_one('.jogo-title').text.strip()
+                link = botao_comprar.get('href')
+                jogos_disponiveis.append((index, nome, link))
+        return jogos_disponiveis
+    return []
 
-    barra(VERMELHO, barra_largura, barra_altura)
-    barra(BRANCO, barra_largura, barra_altura)
-    barra(PRETO, barra_largura, barra_altura)
-    
-    return
+def escolha_setor(setores_disponiveis):
+    print("\n🏟️ Setores disponíveis:")
+    for idx, setor in setores_disponiveis.items():
+        print(f"  [{idx}] - {setor}")
 
-def bot():
+    setor_escolhido = int(input("\n * Escolha o setor 👉 "))
+    return setores_disponiveis[setor_escolhido]
+
+def pesquisa_ingresso(jogo_escolhido, setor_escolhido):
     intervalo = [30, 45, 18, 20]
+    tentativa = 0
     encontrado = False
 
-    opcoes_setores = [
-        "  [0] - Arquibancada Norte Oreo - Inteira",
-        "  [1] - Arquibancada Leste Lacta - Meia",
-        "  [2] - Arquibancada Leste Lacta - Inteira",
-        "  [3] - Arquibancada Sul Diamante Negro - Meia",
-        "  [4] - Arquibancada Sul Diamante Negro - Inteira",
-        "  [5] - Arquibancada Visitante Ouro Branco - Meia",
-        "  [6] - Arquibancada Visitante Ouro Branco - Inteira",
-        "  [7] - Cadeira Superior Norte Oreo - Inteira",
-        "  [8] - Cadeira Superior Sul Diamante Negro - Meia",
-        "  [9] - Cadeira Superior Sul Diamante Negro - Inteira",
-        "  [10] - Cadeira Especial Oeste Ouro Branco - Especial Meia",
-        "  [11] - Cadeira Especial Oeste Ouro Branco - Especial Inteira",
-        "  [12] - Cadeira Térrea Oeste Ouro Branco - Meia",
-        "  [13] - Cadeira Térrea Oeste Ouro Branco - Inteira",
-        "  [14] - Camarote Corporativo SPFC - Único",
-        "  [15] - Camarote dos Ídolos - Único"
-    ]
+    def renderiza_pagina(link):
+        params = webdriver.ChromeOptions()
+        params.add_argument('--headless')
+        navegador = webdriver.Chrome(options=params)
+        navegador.get(link)
 
-    dicionario_setores = [
-        "ARQUIBANCADA NORTE OREO - Inteira",
-        "ARQUIBANCADA LESTE LACTA - Meia",
-        "ARQUIBANCADA LESTE LACTA - Inteira",
-        "ARQUIBANCADA SUL DIAMANTE NEGRO - Meia",
-        "ARQUIBANCADA SUL DIAMANTE NEGRO - Inteira",
-        "ARQUIBANCADA VISITANTE OURO BRANCO - Meia",
-        "ARQUIBANCADA VISITANTE OURO BRANCO - Inteira",
-        "CADEIRA SUPERIOR NORTE OREO - Inteira",
-        "CAD. SUP. SUL DIAMANTE NEGRO - Meia",
-        "CAD. SUP. SUL DIAMANTE NEGRO - Inteira",
-        "CAD. ESP. OESTE OURO BRANCO - Especial Meia",
-        "CAD. ESP. OESTE OURO BRANCO - Especial Inteira",
-        "CAD. TÉRREA OESTE OURO BRANCO - Meia",
-        "CAD. TÉRREA OESTE OURO BRANCO - Inteira",
-        "CAMAROTE CORPORATIVO SPFC - Único",
-        "CAMAROTE DOS ÍDOLOS - Único"
-   ] 
+        try:
+            WebDriverWait(navegador, 10).until(EC.presence_of_element_located((By.CLASS_NAME, "nameAndLot")))
+        except Exception as e:
+            print(f"\n ⚙️ Nenhum ingresso disponível: {e}")
 
-    def request(destino_bot):    
-        response = requests.get(destino_bot)
-        if response.status_code == 200:
-            return response.text
-        else:
-            print("Erro:", response.status_code)
-        return None
+        pagina_renderizada = BeautifulSoup(navegador.page_source, "html.parser")
+        navegador.quit()
+        return pagina_renderizada
 
-    def lista_jogos():
-        destino_bot = "https://www.spfcticket.net/"
-        response = requests.get(destino_bot)
-        html_parseado = BeautifulSoup(response.text, 'html.parser')
-        todos_jogos = html_parseado.select('.card-jogo')
+    while not encontrado:
+        if tentativa >= 1:
+            print(f"⚙️ Tentativa #{tentativa}: {time.strftime('%H:%M:%S')}")
 
-        jogos_disponiveis = []
+        html_parseado = renderiza_pagina(jogo_escolhido)
 
-        if todos_jogos:
-            
-            for index, jogo in enumerate(todos_jogos):
-                botao_comprar = jogo.select_one('a.btn.btn-primary') 
-
-                if botao_comprar and 'Comprar agora' in botao_comprar.text:
-                    nome = jogo.select_one('.jogo-title').text.strip()
-                    link = botao_comprar.get('href')
-                    bandeira()
-                    print("\nBilheteria aberta \n")
-                    print(f"  [{index}] - {nome}")
-                    jogos_disponiveis.append(link)
-                     
-                    if jogos_disponiveis:
-                        escolha = int(input("\n * Digite a opção e escolha o jogo 👉 "))
-                        return jogos_disponiveis[escolha]
-
-                else:    
-                    bandeira()
-                    print("\n❌ Nenhum jogo disponível, volte mais tarde e tente novamente.")
-                    print("\n⚽️ Enquanto isso, assista o antológico Gol 100 do Rogério Ceni: \n➡️ https://www.youtube.com/watch?v=q0bzabZyWNk")
-                    return None
-
-            
-        else:
-            return None        
-        
-
-    def escolha_setor():
-        print("\n  🏟  Setores do MorumBIS: \n")
-
-        for setor in opcoes_setores:
-            print(setor)
-
-        setor_escolhido = int(input("\n * Agora escolha o setor 👉 "))
-        return setor_escolhido 
-
-    def verifica_ingresso(setor_escolhido, link):
-        def renderiza_pagina(link):
-            params = webdriver.ChromeOptions()
-            params.add_argument('--headless') 
-            navegador = webdriver.Chrome(options=params)
-            navegador.get(link)            
-            
-            try:
-                WebDriverWait(navegador, 10).until(EC.presence_of_element_located((By.CLASS_NAME, "nameAndLot")))
-            except:
-                print("\n ⚙️ Nenhum ingresso disponível, tentando novamente... \n")
-
-            pagina_renderizada = BeautifulSoup(navegador.page_source, "html.parser")
-            navegador.quit()
-            return pagina_renderizada
-        
-        html_parseado = renderiza_pagina(link)
-        
         setores_disponiveis = html_parseado.find_all('div', class_='cart-product-group-item')
-
         for setor in setores_disponiveis:
-            if dicionario_setores[setor_escolhido] in setor.text and 'Esgotado' not in setor.text:
+            if setor_escolhido in setor.text and 'Esgotado' not in setor.text:
+                encontrado = True
+                print("🚨 Ingresso disponível agora:", time.strftime("%H:%M:%S"))
+                print("➡️ Link:", jogo_escolhido)
+                print("\n🎉 Bom jogo, Tricolor! Vamos São Paulo! 🇳🇱")
                 return True
 
-        return False
+        tentativa += 1
+        time.sleep(random.choice(intervalo))
 
-    def disparo_alerta(link):
-        print("🚨 Ingresso disponível agora:", time.strftime("%H:%M:%S"))
-        print("➡️ Link:", link)
-        return print("\n🎉 Bom jogo, Tricolor! Vamos São Paulo! 🇳🇱")
+    return False
 
-    def query(destino_bot, setor_escolhido):
-        def parseador_link(link):
-            response = request(link)
-            html_parseado_jogos = BeautifulSoup(response, 'html.parser')
-            link_pagina_compra = html_parseado_jogos.select('li a.btn.btn-primary')[0].get('href')
-            return link_pagina_compra
-        
-        link_parseado = parseador_link(destino_bot)
-
-        if link_parseado:
-            if 'cart' not in link_parseado:
-               link_parseado = parseador_link(link_parseado)
-            status = verifica_ingresso(setor_escolhido, link_parseado)
-            return {
-                "disponivel": status,
-                "link": link_parseado 
-            }
-        
-        else:
-            return {"disponivel": False}
-
-    def pesquisa_ingresso(jogo_escolhido, setor_escolhido):
-        tentativa = 0
-        nonlocal encontrado
-        if tentativa == 0: 
-            print('\n ✅ Pronto! Deixe a janela aberta, aguarde e deixe as máquinas trabalharem 🖐🏽 \n')
-        while not encontrado:
-            if tentativa >= 1:
-                print(f"⚙️ Tentativa #{tentativa}:", time.strftime("%H:%M:%S"))
-            
-            resultado_query = query(jogo_escolhido, setor_escolhido)
-            
-            if resultado_query["disponivel"]:
-                encontrado = True
-                return disparo_alerta(resultado_query["link"])
-            
-            tentativa += 1
-            time.sleep(random.choice(intervalo)) # respira um pouco.
+def bot():
     
-    jogo_escolhido = lista_jogos()
-    
-    if jogo_escolhido:
-        setor_escolhido = escolha_setor()
-        return pesquisa_ingresso(jogo_escolhido, setor_escolhido)
+    jogos = lista_jogos()
+    if not jogos:
+        print("\n❌ Nenhum jogo disponível no momento.")
+        return
 
-bot()
+    print("\nBilheteria aberta\n")
+    for index, nome, _ in jogos:
+        print(f"  [{index}] - {nome}")
+
+    escolha = int(input("\n * Digite a opção e escolha o jogo 👉 "))
+    jogo_escolhido = jogos[escolha][2]
+
+    dicionario_setores = {
+        0: "Arquibancada Norte Oero - Inteira",
+        1: "Arquibancada Leste Lacta - Inteira",
+        2: "Arquibancada Sul Diamante Negro - Meia",
+        3: "Arquibancada Sul Diamante Negro - Inteira",
+        4: "Arquibancada Visitante Ouro Branco - Meia",
+        5: "Arquibancada Visitante Ouro Branco - Inteira",
+        6: "Cadeira Superior Norte Oero - Inteira",
+        7: "Cadeira Superior Sul Diamante Negro - Meia",
+        8: "Cadeira Especial Oeste Ouro Branco - Especial Inteira",
+        9: "Cadeira Térrea Oeste Ouro Branco - Meia",
+        10: "Camarote dos Ídolos - Único",
+    }
+
+    setor_escolhido = escolha_setor(dicionario_setores)
+
+    print("\n ✅ Pronto! Deixe a janela aberta e aguarde enquanto procuramos o ingresso.")
+
+    encontrado = pesquisa_ingresso(jogo_escolhido, setor_escolhido)
+
+    if encontrado:
+        print("\n🎉 Ingresso encontrado com sucesso! Aproveite o jogo!")
+    else:
+        print("\n❌ Não foi possível encontrar o ingresso. Tente novamente mais tarde.")
+
+# Só roda o bot no CLI, se executado diretamente
+if __name__ == "__main__":
+    bot()
 
 # !TO-DO: Rodar a página escolhida para fazer o scrap e pegar o link do botão de compra certo

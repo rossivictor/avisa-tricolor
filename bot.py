@@ -6,6 +6,17 @@ from selenium import webdriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
+from config import opcoes_setores, dicionario_setores
+
+intervalo = [30, 45, 18, 20]
+
+def request(destino_bot):    
+    response = requests.get(destino_bot)
+    if response.status_code == 200:
+        return response.text
+    else:
+        print("Erro:", response.status_code)
+    return None
 
 def lista_jogos():
     destino_bot = "https://www.spfcticket.net/"
@@ -18,102 +29,110 @@ def lista_jogos():
     if todos_jogos:
         for index, jogo in enumerate(todos_jogos):
             botao_comprar = jogo.select_one('a.btn.btn-primary')
+
             if botao_comprar and 'Comprar agora' in botao_comprar.text:
                 nome = jogo.select_one('.jogo-title').text.strip()
                 link = botao_comprar.get('href')
-                jogos_disponiveis.append((index, nome, link))
-        return jogos_disponiveis
-    return []
+                jogos_disponiveis.append({"nome": nome, "link": link})
+    
+    print("\n\n\nbot.py [jogos disponíveis]:\n")
+    print(jogos_disponiveis)
+    return jogos_disponiveis
 
-def escolha_setor(setores_disponiveis):
-    print("\n🏟️ Setores disponíveis:")
-    for idx, setor in setores_disponiveis.items():
-        print(f"  [{idx}] - {setor}")
-
-    setor_escolhido = int(input("\n * Escolha o setor 👉 "))
-    return setores_disponiveis[setor_escolhido]
-
-def pesquisa_ingresso(jogo_escolhido, setor_escolhido):
-    intervalo = [30, 45, 18, 20]
-    tentativa = 0
-    encontrado = False
-
+def verifica_ingresso(setor_escolhido, link):
+    print(f"Setor escolhido:", setor_escolhido)
+    print(f"Link:", link)
     def renderiza_pagina(link):
         params = webdriver.ChromeOptions()
-        params.add_argument('--headless')
+        params.add_argument('--headless') 
         navegador = webdriver.Chrome(options=params)
         navegador.get(link)
-
+        
         try:
             WebDriverWait(navegador, 10).until(EC.presence_of_element_located((By.CLASS_NAME, "nameAndLot")))
-        except Exception as e:
-            print(f"\n ⚙️ Nenhum ingresso disponível: {e}")
+        except:
+            print("\n ⚙️ Nenhum ingresso disponível, tentando novamente... \n")
 
         pagina_renderizada = BeautifulSoup(navegador.page_source, "html.parser")
         navegador.quit()
         return pagina_renderizada
+    
+    html_parseado = renderiza_pagina(link)
+    
+    setores_disponiveis = html_parseado.find_all('div', class_='cart-product-group-item')
 
-    while not encontrado:
-        if tentativa >= 1:
-            print(f"⚙️ Tentativa #{tentativa}: {time.strftime('%H:%M:%S')}")
-
-        html_parseado = renderiza_pagina(jogo_escolhido)
-
-        setores_disponiveis = html_parseado.find_all('div', class_='cart-product-group-item')
-        for setor in setores_disponiveis:
-            if setor_escolhido in setor.text and 'Esgotado' not in setor.text:
-                encontrado = True
-                print("🚨 Ingresso disponível agora:", time.strftime("%H:%M:%S"))
-                print("➡️ Link:", jogo_escolhido)
-                print("\n🎉 Bom jogo, Tricolor! Vamos São Paulo! 🇳🇱")
-                return True
-
-        tentativa += 1
-        time.sleep(random.choice(intervalo))
+    for setor in setores_disponiveis:
+        if dicionario_setores[setor_escolhido] in setor.text and 'Esgotado' not in setor.text:
+            return True
 
     return False
 
-def bot():
+def disparo_alerta(link):
+    print("🚨 Ingresso disponível agora:", time.strftime("%H:%M:%S"))
+    print("➡️ Link:", link)
+    return print("\n🎉 Bom jogo, Tricolor! Vamos São Paulo! 🇳🇱")
+
+def query(destino_bot, setor_escolhido):
+    def parseador_link(link):
+        response = request(link)
+        html_parseado_jogos = BeautifulSoup(response, 'html.parser')
+        link_pagina_compra = html_parseado_jogos.select('li a.btn.btn-primary')[0].get('href')
+        return link_pagina_compra
     
+    link_parseado = parseador_link(destino_bot)
+
+    if link_parseado:
+        if 'cart' not in link_parseado:
+            link_parseado = parseador_link(link_parseado)
+        status = verifica_ingresso(setor_escolhido, link_parseado)
+        return {
+            "disponivel": status,
+            "link": link_parseado 
+        }
+    
+    else:
+        return {"disponivel": False}
+
+def pesquisa_ingresso(jogo_escolhido, setor_escolhido):
+    tentativa = 0
+    encontrado = False
+    if tentativa == 0: 
+        print('\n ✅ Pronto! Deixe a janela aberta, aguarde e deixe as máquinas trabalharem 🖐🏽 \n')
+    while not encontrado:
+        if tentativa >= 1:
+            print(f"⚙️ Tentativa #{tentativa}:", time.strftime("%H:%M:%S"))
+        
+        resultado_query = query(jogo_escolhido, setor_escolhido)
+        
+        if resultado_query["disponivel"]:
+            encontrado = True
+            return disparo_alerta(resultado_query["link"])
+        else:
+            tentativa += 1
+            time.sleep(random.choice(intervalo)) # respira um pouco.
+
+# CLI original
+if __name__ == "__main__":
     jogos = lista_jogos()
     if not jogos:
-        print("\n❌ Nenhum jogo disponível no momento.")
-        return
+        print("Nenhum jogo disponível.")
+        exit()
 
-    print("\nBilheteria aberta\n")
-    for index, nome, _ in jogos:
-        print(f"  [{index}] - {nome}")
+    print("Jogos disponíveis:")
+    for i, jogo in enumerate(jogos):
+        print(f"[{i}] - {jogo['nome']}")
 
-    escolha = int(input("\n * Digite a opção e escolha o jogo 👉 "))
-    jogo_escolhido = jogos[escolha][2]
+    escolha_jogo = int(input("Escolha um jogo: "))
+    jogo_escolhido = jogos[escolha_jogo]
 
-    dicionario_setores = {
-        0: "Arquibancada Norte Oero - Inteira",
-        1: "Arquibancada Leste Lacta - Inteira",
-        2: "Arquibancada Sul Diamante Negro - Meia",
-        3: "Arquibancada Sul Diamante Negro - Inteira",
-        4: "Arquibancada Visitante Ouro Branco - Meia",
-        5: "Arquibancada Visitante Ouro Branco - Inteira",
-        6: "Cadeira Superior Norte Oero - Inteira",
-        7: "Cadeira Superior Sul Diamante Negro - Meia",
-        8: "Cadeira Especial Oeste Ouro Branco - Especial Inteira",
-        9: "Cadeira Térrea Oeste Ouro Branco - Meia",
-        10: "Camarote dos Ídolos - Único",
-    }
+    print("\nSetores disponíveis:")
+    for i, setor in enumerate(opcoes_setores):
+        print(f"[{i}] - {setor}")
 
-    setor_escolhido = escolha_setor(dicionario_setores)
+    escolha_setor = int(input("Escolha um setor: "))
+    resultado = verifica_ingresso(jogo_escolhido["link"], escolha_setor)
 
-    print("\n ✅ Pronto! Deixe a janela aberta e aguarde enquanto procuramos o ingresso.")
-
-    encontrado = pesquisa_ingresso(jogo_escolhido, setor_escolhido)
-
-    if encontrado:
-        print("\n🎉 Ingresso encontrado com sucesso! Aproveite o jogo!")
+    if resultado["disponivel"]:
+        print("Ingresso disponível! Link:", resultado["link"])
     else:
-        print("\n❌ Não foi possível encontrar o ingresso. Tente novamente mais tarde.")
-
-# Só roda o bot no CLI, se executado diretamente
-if __name__ == "__main__":
-    bot()
-
-# !TO-DO: Rodar a página escolhida para fazer o scrap e pegar o link do botão de compra certo
+        print("Ainda não há ingressos disponíveis.")

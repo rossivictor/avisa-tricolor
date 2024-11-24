@@ -1,32 +1,23 @@
 document.addEventListener('DOMContentLoaded', async () => {
     const listaJogos = document.querySelector('.lista-jogos');
-    const titulo = document.querySelector('p');
 
     try {
         const response = await fetch('/jogos');
         const jogos = await response.json();
 
-        if (jogos.erro) {
-            listaJogos.innerHTML = `<li>${jogos.erro}</li>`;
-            return;
-        }
-
-        listaJogos.innerHTML = "";
         jogos.forEach((jogo) => {
             const li = document.createElement('li');
-            const link = document.createElement('a');
+            const button = document.createElement('button');
 
-            link.href = `#`;
-            link.textContent = jogo.nome;
-            link.addEventListener('click', async () => {
-                await exibirSetores(jogo);
-            });
+            button.textContent = jogo.nome;
+            button.addEventListener('click', () => exibirSetores(jogo));
+            console.log({jogo})
 
-            li.appendChild(link);
+            li.appendChild(button);
             listaJogos.appendChild(li);
         });
     } catch (error) {
-        listaJogos.innerHTML = `<li>Erro ao carregar jogos: ${error.message}</li>`;
+        console.error(error);
     }
 });
 
@@ -38,6 +29,7 @@ async function exibirSetores(jogo) {
     try {
         const response = await fetch('/setores');
         const setores = await response.json();
+        console.log("Setores: " + setores);
 
         listaJogos.innerHTML = "";
         setores.forEach((setor, id) => {
@@ -48,6 +40,7 @@ async function exibirSetores(jogo) {
             button.addEventListener('click', async () => {
                 await selecionarSetor(id, jogo);
             });
+            console.log({jogo});
 
             li.appendChild(button);
             listaJogos.appendChild(li);
@@ -58,24 +51,50 @@ async function exibirSetores(jogo) {
 }
 
 async function selecionarSetor(setor_id, jogo) {
+    const listaJogos = document.querySelector('.lista-jogos'); // Lista de setores
+    const titulo = document.querySelector('p'); // Título da página
+
+    // Atualizar a interface para indicar que a busca está em andamento
+    titulo.textContent = `${jogo.nome}`;
+    listaJogos.innerHTML = `
+        <li>Buscando ingresso: ${jogo.nome}</li>
+        <li>Setor escolhido: Carregando...</li>
+        <li>⏳ Aguarde, estamos tentando encontrar o ingresso para você...</li>
+    `;
+
     try {
+        // Buscando os setores no back-end
+        const setoresResponse = await fetch('/setores');
+        const opcoesSetores = await setoresResponse.json();
+
+        listaJogos.innerHTML = `
+            <li>Buscando ingresso: ${jogo.nome}</li>
+            <li>Setor escolhido: ${opcoesSetores[setor_id]}</li>
+            <li>⏳ Aguarde, estamos tentando encontrar o ingresso para você...</li>
+        `;
+
+        // Disparar o bot no back-end
         const response = await fetch('/bot', {
             method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({ setor_id, jogo_nome: jogo.nome })
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                setor_id,
+                link: jogo.link,
+            }),
         });
 
         const data = await response.json();
 
-        if (data.erro) {
-            alert(`Erro: ${data.erro}`);
-            return;
+        // Exibir o resultado
+        if (data.mensagem === "Ingresso encontrado!") {
+            listaJogos.innerHTML = `
+                <li>🎉 ${data.mensagem}</li>
+                <li><a href="${data.link}" target="_blank">Clique aqui para comprar seu ingresso!</a></li>
+            `;
+        } else {
+            listaJogos.innerHTML = `<li>⚙️ ${data.mensagem}</li>`;
         }
-
-        alert(data.mensagem);
     } catch (error) {
-        alert(`Erro ao iniciar o bot: ${error.message}`);
+        listaJogos.innerHTML = `<li>❌ Erro ao buscar ingresso: ${error.message}</li>`;
     }
 }

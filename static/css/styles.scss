@@ -1,0 +1,137 @@
+@import url("https://fonts.googleapis.com/css2?family=Jaro:opsz@6..72&family=Open+Sans:ital,wght@0,300..800;1,300..800&display=swap");
+
+$vermelho: #a90808;
+$branco: #ddd;
+$preto: #333;
+
+$branco-puro: #fff;
+$cinza: #888;
+$preto-puro: #000;
+
+body {
+  background-color: $branco;
+  color: $preto;
+  font-family: "Open Sans", sans-serif;
+  font-size: 16px;
+}
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  color: $preto;
+  font-family: "Jaro", sans-serif;
+  font-weight: 700;
+
+  text-transform: uppercase;
+}
+
+a {
+  border-bottom: 1px dashed $cinza;
+  color: $preto;
+  text-decoration: none;
+}
+
+ul {
+  list-style-type: none;
+  padding: 0;
+}
+
+h1 {
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  -webkit-text-stroke: 0.5px $preto;
+  background: linear-gradient(
+    to bottom,
+    $vermelho 45%,
+    $branco 45%,
+    $branco 55%,
+    $preto 55%
+  );
+  background-clip: text;
+  font-size: 4rem;
+  margin-bottom: 1rem;
+  text-align: center;
+}
+
+h2 {
+  color: $preto;
+  opacity: 0.7;
+  text-align: center;
+}
+
+#linksContainer {
+  display: flex;
+  font-size: 0.8rem;
+  justify-content: center;
+  text-transform: uppercase;
+
+  a {
+    margin: 0 1rem;
+  }
+}
+
+#appContainer {
+  display: flex;
+  justify-content: center;
+  margin-top: 2rem;
+}
+
+.card {
+  background-color: $branco-puro;
+  border-radius: 0.5rem;
+  box-shadow: 0 0 1rem rgba(0, 0, 0, 0.1);
+  margin: 1.2rem 1rem;
+  max-width: 30rem;
+  padding: 2rem 2.2rem;
+  text-align: center;
+  width: 100%;
+
+  h3 {
+    font-size: 1.5rem;
+    margin-bottom: 1rem;
+    margin-top: 0;
+  }
+
+  p {
+    font-style: italic;
+    margin-bottom: 1rem;
+  }
+
+  button {
+    background-color: $preto;
+    border: none;
+    border-radius: 0.5rem;
+    color: white;
+    cursor: pointer;
+    font-size: 0.9rem;
+    line-height: 1.3rem;
+    margin-top: 1rem;
+    padding: 0.5rem 1.5rem;
+
+    &:hover {
+      background-color: $vermelho;
+    }
+
+    strong {
+      font-family: "Jaro", sans-serif;
+      font-size: 1.2rem;
+    }
+
+    span {
+      font-size: 0.7rem;
+      opacity: 0.8;
+    }
+  }
+
+  select {
+    background: $preto;
+    border-radius: 0.5rem;
+    color: $branco;
+    font-family: "Open Sans", sans-serif;
+    font-size: 0.8rem;
+    padding: 0.5rem 1.5rem;
+  }
+}

@@ -1,100 +1,98 @@
-document.addEventListener('DOMContentLoaded', async () => {
-    const listaJogos = document.querySelector('.lista-jogos');
+document.addEventListener("DOMContentLoaded", async () => {
+  const listaJogos = document.querySelector(".lista-jogos");
 
-    try {
-        const response = await fetch('/jogos');
-        const jogos = await response.json();
+  try {
+    const response = await fetch("/jogos");
+    const jogos = await response.json();
 
-        jogos.forEach((jogo) => {
-            const li = document.createElement('li');
-            const button = document.createElement('button');
+    jogos.forEach((jogo) => {
+      const li = document.createElement("li");
+      const button = document.createElement("button");
 
-            button.textContent = jogo.nome;
-            button.addEventListener('click', () => exibirSetores(jogo));
-            console.log({jogo})
+      button.textContent = jogo.nome;
+      button.addEventListener("click", () => exibirSetores(jogo));
 
-            li.appendChild(button);
-            listaJogos.appendChild(li);
-        });
-    } catch (error) {
-        console.error(error);
-    }
+      li.appendChild(button);
+      listaJogos.appendChild(li);
+    });
+  } catch (error) {
+    console.error(error);
+  }
 });
 
 async function exibirSetores(jogo) {
-    const listaJogos = document.querySelector('.lista-jogos');
-    const titulo = document.querySelector('p');
-    titulo.textContent = `Escolha um setor para o jogo: ${jogo.nome}`;
+  const listaJogos = document.querySelector(".lista-jogos");
+  const titulo = document.querySelector("p");
+  titulo.textContent = `Escolha um setor para o jogo: ${jogo.nome}`;
 
-    try {
-        const response = await fetch('/setores');
-        const setores = await response.json();
-        console.log("Setores: " + setores);
+  try {
+    const response = await fetch("/setores");
+    const setores = await response.json();
 
-        listaJogos.innerHTML = "";
-        setores.forEach((setor, id) => {
-            const li = document.createElement('li');
-            const button = document.createElement('button');
+    listaJogos.innerHTML = "";
+    setores.forEach((setor, id) => {
+      const li = document.createElement("li");
+      const button = document.createElement("button");
 
-            button.textContent = setor;
-            button.addEventListener('click', async () => {
-                await selecionarSetor(id, jogo);
-            });
-            console.log({jogo});
+      button.textContent = setor;
+      button.addEventListener("click", async () => {
+        await selecionarSetor(id, setor, jogo);
+      });
 
-            li.appendChild(button);
-            listaJogos.appendChild(li);
-        });
-    } catch (error) {
-        listaJogos.innerHTML = `<li>Erro ao carregar setores: ${error.message}`;
-    }
+      li.appendChild(button);
+      listaJogos.appendChild(li);
+    });
+  } catch (error) {
+    listaJogos.innerHTML = `<li>Erro ao carregar setores: ${error.message}`;
+  }
 }
 
-async function selecionarSetor(setor_id, jogo) {
-    const listaJogos = document.querySelector('.lista-jogos'); // Lista de setores
-    const titulo = document.querySelector('p'); // Título da página
+async function selecionarSetor(setor_id, setor_nome, jogo) {
+  const listaJogos = document.querySelector(".lista-jogos");
+  const titulo = document.querySelector("p");
+  const mensagens = document.querySelector("#mensagens");
+  const setorId = encodeURIComponent(setor_id);
+  const setorNome = encodeURIComponent(setor_nome);
+  const jogoNome = encodeURIComponent(jogo.nome);
+  const jogoLink = encodeURIComponent(jogo.link);
+  const botEndpoint = `/bot?jogo_link=${jogoLink}&setor_id=${setorId}`;
 
-    // Atualizar a interface para indicar que a busca está em andamento
-    titulo.textContent = `${jogo.nome}`;
-    listaJogos.innerHTML = `
-        <li>Buscando ingresso: ${jogo.nome}</li>
-        <li>Setor escolhido: Carregando...</li>
-        <li>⏳ Aguarde, estamos tentando encontrar o ingresso para você...</li>
-    `;
+  listaJogos.innerHTML = "";
+  mensagens.innerHTML = `<p>✅ Pronto! Deixe a janela aberta e aguarde enquanto as máquinas trabalham para você! 🖐🏽</p>`;
 
-    try {
-        // Buscando os setores no back-end
-        const setoresResponse = await fetch('/setores');
-        const opcoesSetores = await setoresResponse.json();
+  const eventSource = new EventSource(botEndpoint);
 
-        listaJogos.innerHTML = `
-            <li>Buscando ingresso: ${jogo.nome}</li>
-            <li>Setor escolhido: ${opcoesSetores[setor_id]}</li>
-            <li>⏳ Aguarde, estamos tentando encontrar o ingresso para você...</li>
-        `;
+  eventSource.onmessage = (event) => {
+    const data = JSON.parse(event.data);
 
-        // Disparar o bot no back-end
-        const response = await fetch('/bot', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                setor_id,
-                link: jogo.link,
-            }),
-        });
-
-        const data = await response.json();
-
-        // Exibir o resultado
-        if (data.mensagem === "Ingresso encontrado!") {
-            listaJogos.innerHTML = `
-                <li>🎉 ${data.mensagem}</li>
-                <li><a href="${data.link}" target="_blank">Clique aqui para comprar seu ingresso!</a></li>
+    if (data.status === "disponivel") {
+      alert(`AVISA TRICOLOR: 🚨 Ingresso disponível! Corre pra comprar!`);
+      mensagens.innerHTML = `
+                <p>🚨 Ingresso disponível agora: ${new Date().toLocaleTimeString()}</p>
+                <p>➡️ Link: <a href="${data.link}" target="_blank">${
+        data.link
+      }</a></p>
+                <p>🎉 Bom jogo, Tricolor! Vamos São Paulo! 🇪🇬</p>
             `;
-        } else {
-            listaJogos.innerHTML = `<li>⚙️ ${data.mensagem}</li>`;
-        }
-    } catch (error) {
-        listaJogos.innerHTML = `<li>❌ Erro ao buscar ingresso: ${error.message}</li>`;
+      eventSource.close();
+    } else if (data.status === "tentando") {
+      const tentativa = data.tentativa || 1;
+      const logP = document.querySelector("#logContainer p");
+      logP.innerHTML =
+        "⚙️ Ainda não conseguimos, mas vamos continuar tentando!";
+      const logUl = document.querySelector("#logContainer ul");
+      const novoLog = document.createElement("li");
+      novoLog.innerHTML = `Tentativa ${tentativa}: ${new Date().toLocaleTimeString()}`;
+      logUl.prepend(novoLog);
     }
+  };
+
+  eventSource.onerror = (error) => {
+    alert(
+      "AVISA TRICOLOR: 😰 Houve um erro no servidor. Tente novamente!",
+      error
+    );
+    mensagens.innerHTML += `<p>❌ Ocorreu um erro ao tentar se conectar ao servidor. Por favor, tente atualizar a página e tentar novamente.</p>`;
+    eventSource.close();
+  };
 }
